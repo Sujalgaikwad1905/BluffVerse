@@ -105,6 +105,7 @@ export function playCards(
   
     game.phase = GamePhase.BLUFF_WINDOW;
     game.passCount = 0;
+    game.roundStarter = game.currentTurn;
     if (player.cards.length === 0) {
         game.winner = player.id;
         game.phase = GamePhase.GAME_OVER;
@@ -125,8 +126,73 @@ export function playCards(
     game.phase = GamePhase.PLAYER_DECISION;
   
     game.currentTurn =
-      (game.currentTurn + 1) %
-      game.players.length;
+        (game.currentTurn + 1) %
+        game.players.length;
+
+        game.roundStarter = game.currentTurn;
+
+        return game;
+  }
+
+
+  export function resolveBluff(
+    roomCode: string,
+    callerId: string
+  ): GameState {
+    const game = activeGames.get(roomCode);
+  
+    if (!game) {
+      throw new Error("Game not found");
+    }
+  
+    if (!game.lastPlayerId) {
+      throw new Error("No previous move");
+    }
+  
+    const lastPlayer = game.players.find(
+      (p) => p.id === game.lastPlayerId
+    );
+  
+    const caller = game.players.find(
+      (p) => p.id === callerId
+    );
+  
+    if (!lastPlayer || !caller) {
+      throw new Error("Player not found");
+    }
+  
+    const bluffSuccessful = game.lastPlayedCards.some(
+      (card) => card.rank !== game.currentClaimedRank
+    );
+  
+    // Make a copy BEFORE clearing the pile
+    const pile = [...game.pile];
+  
+    if (bluffSuccessful) {
+      // Previous player lied
+      lastPlayer.cards.push(...pile);
+  
+      game.currentTurn = game.players.findIndex(
+        (p) => p.id === callerId
+      );
+    } else {
+      // Caller challenged incorrectly
+      caller.cards.push(...pile);
+  
+      game.currentTurn = game.players.findIndex(
+        (p) => p.id === game.lastPlayerId
+      );
+    }
+  
+    // Reset round state
+    game.pile = [];
+    game.lastPlayedCards = [];
+    game.lastPlayerId = null;
+    game.currentClaimedRank = null;
+    
+    game.phase = GamePhase.PLAYER_DECISION;
+    game.passCount = 0;
+    game.roundStarter = game.currentTurn;
   
     return game;
   }

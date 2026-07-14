@@ -1,6 +1,11 @@
 import { Card, Rank } from "./deck.js";
-import { activeGames, GameState, PlayerState } from "./game.state.js";
-import { GamePhase } from "./game.state.js";
+
+import {
+    activeGames,
+    GameState,
+    PlayerState,
+    GamePhase,
+  } from "./game.state.js";
 
 class GameValidator {
   getGame(roomCode: string): GameState {
@@ -22,6 +27,38 @@ class GameValidator {
 
     return player;
   }
+
+  validateCallBluff(
+    roomCode: string,
+    callerId: string
+  ): {
+    game: GameState;
+    caller: PlayerState;
+  } {
+    const game = this.getGame(roomCode);
+  
+    if (!game.started) {
+      throw new Error("Game has not started");
+    }
+  
+    if (game.phase !== GamePhase.BLUFF_WINDOW) {
+      throw new Error("Bluff window is closed");
+    }
+  
+    const caller = this.getPlayer(game, callerId);
+  
+    if (game.lastPlayerId === callerId) {
+      throw new Error(
+        "You cannot challenge your own move"
+      );
+    }
+  
+    return {
+      game,
+      caller,
+    };
+  }
+    
 
   validatePlayCards(
     roomCode: string,
@@ -74,5 +111,8 @@ class GameValidator {
     };
   }
 }
+
+
+
 
 export const gameValidator = new GameValidator();

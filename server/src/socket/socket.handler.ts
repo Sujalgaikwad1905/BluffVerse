@@ -5,6 +5,7 @@ import { playCards } from "../game/game.manager.js";
 import type { Card, Rank } from "../game/deck.js";
 import { eventQueue } from "../game/event.queue.js";
 import { gameEngine } from "../game/game.engine.js";
+
 interface PlayerState {
   id: string;
   username: string;
@@ -25,6 +26,10 @@ interface ReadyPayload {
   roomCode: string;
 }
 interface StartGamePayload {
+  roomCode: string;
+}
+
+interface CallBluffPayload {
   roomCode: string;
 }
 interface PlayCardsPayload {
@@ -99,6 +104,15 @@ function getPlayers(roomCode: string): PlayerState[] {
   }
 
   return Array.from(players.values());
+}
+
+function getPlayerBySocket(
+  roomCode: string,
+  socketId: string
+): PlayerState | undefined {
+  return roomPlayers
+    .get(roomCode)
+    ?.get(socketId);
 }
 
 function setReady(
@@ -226,6 +240,33 @@ export function registerSocketHandlers(io: Server): void {
     }
   );
 
+
+  socket.on(
+    "call_bluff",
+    async (payload: CallBluffPayload) => {
+      try {
+        const player = getPlayerBySocket(
+          payload.roomCode,
+          socket.id
+        );
+  
+        if (!player) {
+          return;
+        }
+  
+        await gameEngine.handleCallBluff(
+          payload.roomCode,
+          player.id
+        );
+      } catch (error) {
+        logger.error("Bluff failed", {
+          roomCode: payload.roomCode,
+          socketId: socket.id,
+          error,
+        });
+      }
+    }
+  );
 
   socket.on(
     "play_cards",
