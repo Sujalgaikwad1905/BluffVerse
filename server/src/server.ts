@@ -1,6 +1,7 @@
 import app from "./app.js";
 import { env } from "./config/env.js";
 import { logger } from "./shared/logger/logger.js";
+import { initializeSocket } from "./socket/socket.js";
 
 const server = app.listen(env.PORT, () => {
   logger.info("Server started", {
@@ -8,6 +9,8 @@ const server = app.listen(env.PORT, () => {
     nodeEnv: env.NODE_ENV,
   });
 });
+
+initializeSocket(server);
 
 function shutdown(signal: string): void {
   logger.info("Shutdown signal received", { signal });
