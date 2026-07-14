@@ -1,10 +1,11 @@
 import type { Server, Socket } from "socket.io";
 import { logger } from "../shared/logger/logger.js";
 import { startGame } from "../game/game.manager.js";
-import { playCards } from "../game/game.manager.js";
+
 import type { Card, Rank } from "../game/deck.js";
 import { eventQueue } from "../game/event.queue.js";
 import { gameEngine } from "../game/game.engine.js";
+
 
 interface PlayerState {
   id: string;
@@ -32,9 +33,11 @@ interface StartGamePayload {
 interface CallBluffPayload {
   roomCode: string;
 }
+
+
 interface PlayCardsPayload {
   roomCode: string;
-  userId: string;
+  
   cards: Card[];
   claimedRank: Rank;
 }
@@ -268,30 +271,44 @@ export function registerSocketHandlers(io: Server): void {
     }
   );
 
+
+
   socket.on(
     "play_cards",
     async (payload: PlayCardsPayload) => {
       try {
+        const player = getPlayerBySocket(
+          payload.roomCode,
+          socket.id
+        );
+  
+        if (!player) {
+          return;
+        }
+  
         const game = await gameEngine.handlePlayCards(
           payload.roomCode,
-          payload.userId,
+          player.id,
           payload.cards,
           payload.claimedRank
         );
   
         io.to(payload.roomCode).emit("cards_played", {
-          playerId: payload.userId,
+          playerId: player.id,
           claimedRank: game.currentClaimedRank,
           cardsPlayed: payload.cards.length,
         });
   
         logger.info("Cards played", {
           roomCode: payload.roomCode,
-          playerId: payload.userId,
+          playerId: player.id,
           cardsPlayed: payload.cards.length,
         });
+  
       } catch (error) {
         logger.error("Failed to play cards", {
+          roomCode: payload.roomCode,
+          socketId: socket.id,
           error,
         });
       }
