@@ -7,6 +7,12 @@ export interface PlayerState {
   ready: boolean;
 }
 
+export enum GamePhase {
+    PLAYER_DECISION = "PLAYER_DECISION",
+    BLUFF_WINDOW = "BLUFF_WINDOW",
+    GAME_OVER = "GAME_OVER",
+  }
+
 export interface GameState {
   roomCode: string;
 
@@ -22,7 +28,7 @@ export interface GameState {
 
   lastPlayerId: string | null;
 
-  bluffWindowOpen: boolean;
+  phase: GamePhase;
 
   passCount: number;
 
@@ -32,6 +38,8 @@ export interface GameState {
 
   winner: string | null;
 }
+
+
 
 export const activeGames = new Map<
   string,

@@ -1,5 +1,6 @@
 import { Card, Rank } from "./deck.js";
 import { activeGames, GameState, PlayerState } from "./game.state.js";
+import { GamePhase } from "./game.state.js";
 
 class GameValidator {
   getGame(roomCode: string): GameState {
@@ -37,8 +38,8 @@ class GameValidator {
       throw new Error("Game has not started");
     }
 
-    if (game.bluffWindowOpen) {
-      throw new Error("Bluff window is already open");
+    if (game.phase !== GamePhase.PLAYER_DECISION) {
+        throw new Error("You cannot play cards right now");
     }
 
     const player = this.getPlayer(game, playerId);

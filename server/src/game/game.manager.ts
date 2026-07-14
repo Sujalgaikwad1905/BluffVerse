@@ -2,6 +2,7 @@ import { createDeck } from "./deck.js";
 import { shuffleDeck } from "./shuffle.js";
 import { dealCards } from "./dealer.js";
 import { Card, Rank } from "./deck.js";
+import { GamePhase } from "./game.state.js";
 import {
   activeGames,
   GameState,
@@ -47,7 +48,7 @@ export function startGame(
 
     lastPlayerId: null,
 
-    bluffWindowOpen: false,
+    phase: GamePhase.PLAYER_DECISION,
 
     passCount: 0,
 
@@ -102,11 +103,30 @@ export function playCards(
   
     game.currentClaimedRank = claimedRank;
   
-    game.bluffWindowOpen = true;
+    game.phase = GamePhase.BLUFF_WINDOW;
     game.passCount = 0;
     if (player.cards.length === 0) {
         game.winner = player.id;
+        game.phase = GamePhase.GAME_OVER;
       }
+  
+    return game;
+  }
+
+  export function handleNoBluff(
+    roomCode: string
+  ): GameState {
+    const game = activeGames.get(roomCode);
+  
+    if (!game) {
+      throw new Error("Game not found");
+    }
+  
+    game.phase = GamePhase.PLAYER_DECISION;
+  
+    game.currentTurn =
+      (game.currentTurn + 1) %
+      game.players.length;
   
     return game;
   }
