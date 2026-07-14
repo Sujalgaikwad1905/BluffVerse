@@ -26,11 +26,25 @@ class RoomService {
 
   async joinRoom(code: string) {
     const room = await roomRepository.findByCode(code);
-
+  
     if (!room) {
       throw new Error("Room not found");
     }
-
+  
+    if (room.status !== "WAITING") {
+      throw new Error("Game already started");
+    }
+  
+    return room;
+  }
+  
+  async getRoom(code: string) {
+    const room = await roomRepository.findByCode(code);
+  
+    if (!room) {
+      throw new Error("Room not found");
+    }
+  
     return room;
   }
 }

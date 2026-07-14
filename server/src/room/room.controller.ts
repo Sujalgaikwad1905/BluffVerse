@@ -29,6 +29,20 @@ class RoomController {
       });
     }
   }
+
+  async getRoom(req: Request, res: Response) {
+    try {
+        const code = req.params.code as string;
+  
+      const room = await roomService.getRoom(code);
+  
+      return res.status(200).json(room);
+    } catch (error) {
+      return res.status(404).json({
+        message: error instanceof Error ? error.message : "Room not found",
+      });
+    }
+  }
 }
 
 export const roomController = new RoomController();
