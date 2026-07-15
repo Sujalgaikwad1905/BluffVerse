@@ -1,8 +1,12 @@
 import ConnectionPanel from "../components/ConnectionPanel";
+import LobbyPanel from "../components/LobbyPanel";
 import { useSocket } from "../hooks/useSocket";
 
 export default function DevPage() {
-  const { connected } = useSocket();
+  const {
+    connected,
+    players,
+  } = useSocket();
 
   return (
     <div
@@ -16,6 +20,10 @@ export default function DevPage() {
 
       <ConnectionPanel
         connected={connected}
+      />
+
+      <LobbyPanel
+        players={players}
       />
     </div>
   );
