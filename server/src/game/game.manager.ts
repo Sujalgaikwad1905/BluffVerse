@@ -121,12 +121,26 @@ export function playCards(
     }
   
     game.phase = GamePhase.PLAYER_DECISION;
-  
-    game.currentTurn =
-      (game.currentTurn + 1) %
-      game.players.length;
-  
+
+// Winner is confirmed only after
+// bluff window expires safely.
+if (game.lastPlayerId) {
+  const lastPlayer = game.players.find(
+    (p) => p.id === game.lastPlayerId
+  );
+
+  if (lastPlayer && lastPlayer.cards.length === 0) {
+    game.winner = lastPlayer.id;
+    game.phase = GamePhase.GAME_OVER;
     return game;
+  }
+}
+
+game.currentTurn =
+  (game.currentTurn + 1) %
+  game.players.length;
+
+return game;
   }
 
   
@@ -242,10 +256,18 @@ export function playCards(
     } else {
       // Caller challenged incorrectly
       caller.cards.push(...pile);
-  
+    
+      // Previous player starts next round
       game.currentTurn = game.players.findIndex(
         (p) => p.id === game.lastPlayerId
       );
+    
+      // Previous player survived the bluff.
+      // If they have no cards left, they win.
+      if (lastPlayer.cards.length === 0) {
+        game.winner = lastPlayer.id;
+        game.phase = GamePhase.GAME_OVER;
+      }
     }
 
     console.log("LAST PLAYER HAND", lastPlayer.cards.length);

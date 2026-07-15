@@ -31,28 +31,34 @@ class GameEngine {
               
               timerManager.startBluffTimer(roomCode, () => {
                 eventQueue.enqueue(roomCode, async () => {
-                    const game = handleNoBluff(roomCode);
-
-                    io.to(roomCode).emit("turn_changed", {
-                      currentTurn:
-                        game.players[game.currentTurn].id,
-                    
-                      currentTurnUsername:
-                        game.players[game.currentTurn].username,
-                    
-                      claimedRank:
-                        game.currentClaimedRank,
+              
+                  const game = handleNoBluff(roomCode);
+              
+                  // Winner confirmed after bluff window
+                  if (game.winner) {
+                    io.to(roomCode).emit("game_over", {
+                      winner: game.winner,
                     });
-
-                    
-                    
-                    timerManager.startTurnTimer(roomCode, () => {
-                        // Turn timer always belongs
-                        // to the current player only.
-                        // TODO
-                    });
+              
+                    return;
+                  }
+              
+                  io.to(roomCode).emit("turn_changed", {
+                    currentTurn: game.players[game.currentTurn].id,
+              
+                    currentTurnUsername:
+                      game.players[game.currentTurn].username,
+              
+                    claimedRank: game.currentClaimedRank,
+                  });
+              
+                  timerManager.startTurnTimer(roomCode, () => {
+                    // TODO
+                  });
+              
                 });
               });
+              
               
               return resolve(game);
         } catch (error) {
@@ -82,6 +88,17 @@ class GameEngine {
           );
 
           eventQueue.clearQueue(roomCode);
+
+          if (game.winner) {
+            io.to(roomCode).emit("game_over", {
+              winner: game.winner,
+            });
+          
+            resolve(game);
+            return;
+          }
+
+          
   
           io.to(roomCode).emit("bluff_resolved", {
             winner: game.players[game.currentTurn].id,
