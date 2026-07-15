@@ -36,6 +36,8 @@ export interface GameState {
 
   started: boolean;
 
+  turnToken: number;
+
   winner: string | null;
 }
 

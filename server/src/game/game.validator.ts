@@ -36,6 +36,10 @@ class GameValidator {
     caller: PlayerState;
   } {
     const game = this.getGame(roomCode);
+
+    if (game.phase === GamePhase.GAME_OVER) {
+      throw new Error("Game is already over");
+  }
   
     if (!game.started) {
       throw new Error("Game has not started");
@@ -67,6 +71,11 @@ class GameValidator {
     player: PlayerState;
   } {
     const game = this.getGame(roomCode);
+
+
+    if (game.phase === GamePhase.GAME_OVER) {
+      throw new Error("Game is already over");
+  }
 
     if (game.currentClaimedRank === null) {
       throw new Error(
@@ -107,6 +116,10 @@ class GameValidator {
     player: PlayerState;
   } {
     const game = this.getGame(roomCode);
+
+    if (game.phase === GamePhase.GAME_OVER) {
+      throw new Error("Game is already over");
+  }
 
     if (!game.started) {
       throw new Error("Game has not started");

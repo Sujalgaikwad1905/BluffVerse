@@ -11,6 +11,7 @@ interface PlayerState {
   id: string;
   username: string;
   ready: boolean;
+  isHost: boolean;
 }
 
 const roomPlayers = new Map<
@@ -62,11 +63,15 @@ function addPlayer(
     roomPlayers.set(roomCode, new Map());
   }
 
-  roomPlayers.get(roomCode)!.set(socketId, {
-    id: userId,
-    username,
-    ready: false,
-  });
+  const isHost =
+  roomPlayers.get(roomCode)!.size === 0;
+
+    roomPlayers.get(roomCode)!.set(socketId, {
+      id: userId,
+      username,
+      ready: false,
+      isHost,
+    });
 }
 
 function removePlayer(
@@ -206,8 +211,45 @@ export function registerSocketHandlers(io: Server): void {
     "start_game",
     (payload: StartGamePayload) => {
       const players = getPlayers(payload.roomCode);
+
+      const host = players.find(
+        (player) => player.isHost
+      );
+      
+      const currentPlayer = getPlayerBySocket(
+        payload.roomCode,
+        socket.id
+      );
+      
+      if (
+        !host ||
+        !currentPlayer ||
+        host.id !== currentPlayer.id
+      ) {
+        logger.warn("Non-host tried to start game", {
+          roomCode: payload.roomCode,
+          userId: currentPlayer?.id,
+        });
+      
+        return;
+      }
   
       if (players.length < 2) {
+        return;
+      }
+
+      const everyoneReady = players.every(
+        (player) => player.ready
+      );
+      
+      if (!everyoneReady) {
+        logger.warn(
+          "Cannot start game. Not everyone is ready.",
+          {
+            roomCode: payload.roomCode,
+          }
+        );
+      
         return;
       }
   

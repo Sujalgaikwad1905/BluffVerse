@@ -13,12 +13,20 @@ export default function DevPage() {
     players,
     hand,
     gameState,
+    winner,
   } = useSocket();
 
+
+  
   const [roomCode, setRoomCode] =
     useState("");
 
+    
+
   return (
+
+
+    
     <div
       style={{
         width: 1000,
@@ -27,6 +35,25 @@ export default function DevPage() {
       }}
     >
       <h1>🎮 BluffVerse Developer Panel</h1>
+
+      {winner && (
+  <div
+    style={{
+      background: "green",
+      color: "white",
+      padding: 20,
+      marginBottom: 20,
+      fontSize: 28,
+      fontWeight: "bold",
+      textAlign: "center",
+      borderRadius: 8,
+    }}
+  >
+    🏆 Winner: {winner}
+  </div>
+)}
+
+      
 
       <ConnectionPanel connected={connected} />
 

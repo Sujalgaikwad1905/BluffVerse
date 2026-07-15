@@ -2,6 +2,7 @@ export interface Player {
   id: string;
   username: string;
   ready: boolean;
+  isHost: boolean;
 }
 
 export interface Card {

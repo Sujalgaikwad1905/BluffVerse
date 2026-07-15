@@ -12,6 +12,9 @@ import type {
 export function useSocket() {
   const [connected, setConnected] = useState(false);
 
+
+  const [winner, setWinner] = useState<string | null>(null);
+
   const [players, setPlayers] = useState<Player[]>([]);
 
   const [hand, setHand] = useState<Card[]>([]);
@@ -33,6 +36,15 @@ export function useSocket() {
   }
 
   useEffect(() => {
+
+
+
+    socket.on(
+      "game_over",
+      ({ winnerUsername }) => {
+        setWinner(winnerUsername);
+      }
+    );
     socket.on("connect", () => {
       setConnected(true);
       addLog("Connected");
@@ -103,15 +115,11 @@ export function useSocket() {
 
   return {
     socket,
-
     connected,
-
     players,
-
     hand,
-
     gameState,
-
     logs,
+    winner,
   };
 }

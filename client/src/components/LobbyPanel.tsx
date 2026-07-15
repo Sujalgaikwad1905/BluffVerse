@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { socket } from "../services/socket";
+
 import type { Player } from "../types/socket.types";
 
 interface Props {
@@ -100,7 +101,9 @@ export default function LobbyPanel({
       {players.map((player) => (
         <div key={player.id}>
           {player.username}
-          {player.ready ? " ✅" : " ❌"}
+            {player.isHost ? " 👑" : ""}
+            {player.ready ? " ✅" : " ❌"}
+          
         </div>
       ))}
     </div>

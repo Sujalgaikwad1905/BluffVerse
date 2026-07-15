@@ -55,6 +55,8 @@ export function startGame(
     roundStarter: 0,
     started: true,
     winner: null,
+
+    turnToken: 0,
   };
 
   activeGames.set(roomCode, gameState);
@@ -140,6 +142,8 @@ game.currentTurn =
   (game.currentTurn + 1) %
   game.players.length;
 
+  game.turnToken++;
+
 return game;
   }
 
@@ -168,6 +172,8 @@ return game;
       (game.currentTurn + 1) %
       game.players.length;
 
+      game.turnToken++;
+
       console.log("AFTER ADVANCE", {
         currentTurn: game.currentTurn,
         roundStarter: game.roundStarter,
@@ -182,14 +188,16 @@ return game;
     ) {
 
       console.log("PASS CYCLE COMPLETED");
+      game.pile = [];
+
       game.currentClaimedRank = null;
-  
+
       game.lastPlayedCards = [];
-  
+
       game.lastPlayerId = null;
-  
+
       game.passCount = 0;
-  
+
       game.phase = GamePhase.PLAYER_DECISION;
     }
   
@@ -202,10 +210,14 @@ return game;
     callerId: string
   ): GameState {
     const game = activeGames.get(roomCode);
+
+    
   
     if (!game) {
       throw new Error("Game not found");
     }
+
+    
   
     if (!game.lastPlayerId) {
       throw new Error("No previous move");
@@ -253,6 +265,7 @@ return game;
       game.currentTurn = game.players.findIndex(
         (p) => p.id === callerId
       );
+      game.turnToken++;
     } else {
       // Caller challenged incorrectly
       caller.cards.push(...pile);
@@ -264,10 +277,18 @@ return game;
     
       // Previous player survived the bluff.
       // If they have no cards left, they win.
+      console.log(
+        "CHECK WINNER LENGTH:",
+        lastPlayer.cards.length
+      );
+      
       if (lastPlayer.cards.length === 0) {
+        console.log("SETTING WINNER");
+      
         game.winner = lastPlayer.id;
         game.phase = GamePhase.GAME_OVER;
       }
+      game.turnToken++;
     }
 
     console.log("LAST PLAYER HAND", lastPlayer.cards.length);
@@ -280,13 +301,15 @@ console.log("CALLER HAND", caller.cards.length);
     game.lastPlayerId = null;
     game.currentClaimedRank = null;
     
-    game.phase = GamePhase.PLAYER_DECISION;
+    if (!game.winner) {
+      game.phase = GamePhase.PLAYER_DECISION;
+    }
     game.passCount = 0;
     game.roundStarter = game.currentTurn;
 
-    // Bluff resolution may invalidate
-// a previously declared winner.
-    game.winner = null;
+
+    console.log("GAME WINNER:", game.winner);
+    
   
     return game;
   }
