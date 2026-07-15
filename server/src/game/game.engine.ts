@@ -1,9 +1,10 @@
 import { eventQueue } from "./event.queue.js";
 import {
-    playCards,
-    handleNoBluff,
-    resolveBluff,
-  } from "./game.manager.js";
+  playCards,
+  handleNoBluff,
+  resolveBluff,
+  passTurn,
+} from "./game.manager.js";
 import { gameValidator } from "./game.validator.js";
 import { Card, Rank } from "./deck.js";
 import { GameState } from "./game.state.js";
@@ -33,9 +34,15 @@ class GameEngine {
                     const game = handleNoBluff(roomCode);
 
                     io.to(roomCode).emit("turn_changed", {
-                        currentTurn: game.players[game.currentTurn].id,
-                        claimedRank: game.currentClaimedRank,
-                      });
+                      currentTurn:
+                        game.players[game.currentTurn].id,
+                    
+                      currentTurnUsername:
+                        game.players[game.currentTurn].username,
+                    
+                      claimedRank:
+                        game.currentClaimedRank,
+                    });
 
                     
                     
@@ -73,6 +80,8 @@ class GameEngine {
             roomCode,
             callerId
           );
+
+          eventQueue.clearQueue(roomCode);
   
           io.to(roomCode).emit("bluff_resolved", {
             winner: game.players[game.currentTurn].id,
@@ -81,7 +90,12 @@ class GameEngine {
           io.to(roomCode).emit("turn_changed", {
             currentTurn:
               game.players[game.currentTurn].id,
-            claimedRank: null,
+          
+            currentTurnUsername:
+              game.players[game.currentTurn].username,
+          
+            claimedRank:
+              game.currentClaimedRank,
           });
   
           timerManager.startTurnTimer(
@@ -99,6 +113,53 @@ class GameEngine {
       });
     });
   }
+
+
+  async handlePass(
+    roomCode: string,
+    playerId: string
+  ): Promise<GameState> {
+    return new Promise((resolve, reject) => {
+      eventQueue.enqueue(roomCode, async () => {
+        try {
+          gameValidator.validatePass(
+            roomCode,
+            playerId
+          );
+  
+          const game = passTurn(roomCode);
+
+          
+  
+          io.to(roomCode).emit("turn_changed", {
+            currentTurn:
+              game.players[game.currentTurn].id,
+  
+            currentTurnUsername:
+              game.players[game.currentTurn].username,
+  
+            claimedRank:
+              game.currentClaimedRank,
+          });
+  
+          timerManager.startTurnTimer(
+            roomCode,
+            () => {
+              // TODO:
+              // Auto PASS
+            }
+          );
+  
+          resolve(game);
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+  }
 }
+
+
+
 
 export const gameEngine = new GameEngine();

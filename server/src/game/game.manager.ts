@@ -106,10 +106,7 @@ export function playCards(
     game.phase = GamePhase.BLUFF_WINDOW;
     game.passCount = 0;
     game.roundStarter = game.currentTurn;
-    if (player.cards.length === 0) {
-        game.winner = player.id;
-        game.phase = GamePhase.GAME_OVER;
-      }
+    
   
     return game;
   }
@@ -126,12 +123,63 @@ export function playCards(
     game.phase = GamePhase.PLAYER_DECISION;
   
     game.currentTurn =
-        (game.currentTurn + 1) %
-        game.players.length;
+      (game.currentTurn + 1) %
+      game.players.length;
+  
+    return game;
+  }
 
-        game.roundStarter = game.currentTurn;
+  
 
-        return game;
+  export function passTurn(
+    roomCode: string
+  ): GameState {
+    const game = activeGames.get(roomCode);
+  
+    if (!game) {
+      throw new Error("Game not found");
+    }
+  
+    // Count this pass
+    game.passCount++;
+
+    console.log("PASS DEBUG", {
+      passCount: game.passCount,
+      currentTurnBeforeAdvance: game.currentTurn,
+      roundStarter: game.roundStarter,
+    });
+  
+    // Move to next player
+    game.currentTurn =
+      (game.currentTurn + 1) %
+      game.players.length;
+
+      console.log("AFTER ADVANCE", {
+        currentTurn: game.currentTurn,
+        roundStarter: game.roundStarter,
+      });
+  
+    // Everyone except the last player
+    // has passed. Round ends.
+    if (
+      game.currentTurn === game.roundStarter &&
+      game.passCount ===
+        game.players.length - 1
+    ) {
+
+      console.log("PASS CYCLE COMPLETED");
+      game.currentClaimedRank = null;
+  
+      game.lastPlayedCards = [];
+  
+      game.lastPlayerId = null;
+  
+      game.passCount = 0;
+  
+      game.phase = GamePhase.PLAYER_DECISION;
+    }
+  
+    return game;
   }
 
 
@@ -160,10 +208,26 @@ export function playCards(
     if (!lastPlayer || !caller) {
       throw new Error("Player not found");
     }
+
+    console.log(
+      game.lastPlayedCards.map(c => ({
+        actual: c.rank,
+        claimed: game.currentClaimedRank,
+        equal: c.rank === game.currentClaimedRank,
+      }))
+    ); 
   
     const bluffSuccessful = game.lastPlayedCards.some(
       (card) => card.rank !== game.currentClaimedRank
     );
+
+    console.log({
+      bluffSuccessful,
+      caller: caller.username,
+      lastPlayer: lastPlayer.username,
+      claimedRank: game.currentClaimedRank,
+      actualCards: game.lastPlayedCards.map(c => c.rank),
+    });
   
     // Make a copy BEFORE clearing the pile
     const pile = [...game.pile];
@@ -183,6 +247,10 @@ export function playCards(
         (p) => p.id === game.lastPlayerId
       );
     }
+
+    console.log("LAST PLAYER HAND", lastPlayer.cards.length);
+
+console.log("CALLER HAND", caller.cards.length);  
   
     // Reset round state
     game.pile = [];
@@ -193,6 +261,10 @@ export function playCards(
     game.phase = GamePhase.PLAYER_DECISION;
     game.passCount = 0;
     game.roundStarter = game.currentTurn;
+
+    // Bluff resolution may invalidate
+// a previously declared winner.
+    game.winner = null;
   
     return game;
   }

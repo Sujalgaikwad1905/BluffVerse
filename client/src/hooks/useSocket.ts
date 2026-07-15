@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { socket } from "../services/socket";
+
 import type {
-    Player,
-    Card,
-    EventLog,
-    GameState,
-  } from "../types/socket.types";
+  Player,
+  Card,
+  EventLog,
+  GameState,
+  LastMove,
+} from "../types/socket.types";
 
 export function useSocket() {
   const [connected, setConnected] = useState(false);
@@ -17,7 +19,8 @@ export function useSocket() {
   const [gameState, setGameState] =
     useState<GameState>({});
 
-  const [logs, setLogs] = useState<EventLog[]>([]);
+  const [logs, setLogs] =
+    useState<EventLog[]>([]);
 
   function addLog(message: string) {
     setLogs((prev) => [
@@ -54,22 +57,43 @@ export function useSocket() {
       setGameState((prev) => ({
         ...prev,
         currentTurn: data.currentTurn,
+        currentTurnUsername:
+          data.currentTurnUsername,
         claimedRank: data.claimedRank,
       }));
-
-      addLog("Turn changed");
+    
+      addLog(
+        `Turn changed to ${data.currentTurnUsername}`
+      );
     });
 
-    socket.on("cards_played", () => {
-      addLog("Cards played");
+    socket.on("cards_played", (data: LastMove) => {
+      setGameState((prev) => ({
+        ...prev,
+        lastMove: data,
+      }));
+
+      addLog(
+        `${data.playerId} played ${data.cardsPlayed} cards claiming ${data.claimedRank}`
+      );
     });
 
     socket.on("bluff_resolved", () => {
       addLog("Bluff resolved");
     });
 
-    socket.on("game_started", () => {
-      addLog("Game started");
+    socket.on("game_started", (data) => {
+      setGameState((prev) => ({
+        ...prev,
+        currentTurn: data.currentTurn,
+        currentTurnUsername:
+          data.currentTurnUsername,
+        claimedRank: data.claimedRank,
+      }));
+    
+      addLog(
+        `Game started. ${data.currentTurnUsername}'s turn`
+      );
     });
 
     return () => {

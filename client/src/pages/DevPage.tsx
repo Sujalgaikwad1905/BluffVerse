@@ -1,6 +1,10 @@
+import { useState } from "react";
+
 import ConnectionPanel from "../components/ConnectionPanel";
 import LobbyPanel from "../components/LobbyPanel";
 import HandPanel from "../components/HandPanel";
+import GameStatusPanel from "../components/GameStatusPanel";
+
 import { useSocket } from "../hooks/useSocket";
 
 export default function DevPage() {
@@ -8,7 +12,11 @@ export default function DevPage() {
     connected,
     players,
     hand,
+    gameState,
   } = useSocket();
+
+  const [roomCode, setRoomCode] =
+    useState("");
 
   return (
     <div
@@ -20,16 +28,21 @@ export default function DevPage() {
     >
       <h1>🎮 BluffVerse Developer Panel</h1>
 
-      <ConnectionPanel
-        connected={connected}
-      />
+      <ConnectionPanel connected={connected} />
 
       <LobbyPanel
+        roomCode={roomCode}
+        setRoomCode={setRoomCode}
         players={players}
       />
 
       <HandPanel
+        roomCode={roomCode}
         hand={hand}
+      />
+
+      <GameStatusPanel
+        gameState={gameState}
       />
     </div>
   );

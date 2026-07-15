@@ -42,6 +42,10 @@ interface PlayCardsPayload {
   claimedRank: Rank;
 }
 
+interface PassPayload {
+  roomCode: string;
+}
+
 function getPlayerCount(roomCode: string): number {
   return roomPlayers.get(roomCode)?.size ?? 0;
 }
@@ -233,7 +237,13 @@ export function registerSocketHandlers(io: Server): void {
       io.to(payload.roomCode).emit(
         "game_started",
         {
-          currentTurn: game.currentTurn,
+          currentTurn:
+            game.players[game.currentTurn].id,
+      
+          currentTurnUsername:
+            game.players[game.currentTurn].username,
+      
+          claimedRank: null,
         }
       );
   
@@ -257,15 +267,37 @@ export function registerSocketHandlers(io: Server): void {
           return;
         }
   
-        await gameEngine.handleCallBluff(
+        const game = await gameEngine.handleCallBluff(
           payload.roomCode,
           player.id
         );
+
+        const room = roomPlayers.get(payload.roomCode);
+
+if (room) {
+  for (const [socketId, roomPlayer] of room.entries()) {
+    const playerState = game.players.find(
+      (p) => p.id === roomPlayer.id
+    );
+
+    if (!playerState) {
+      continue;
+    }
+
+    io.to(socketId).emit("your_hand", {
+      cards: playerState.cards,
+    });
+  }
+}
+
       } catch (error) {
-        logger.error("Bluff failed", {
+        logger.error("Failed to play cards", {
           roomCode: payload.roomCode,
           socketId: socket.id,
-          error,
+          error:
+            error instanceof Error
+              ? error.message
+              : String(error),
         });
       }
     }
@@ -292,6 +324,16 @@ export function registerSocketHandlers(io: Server): void {
           payload.cards,
           payload.claimedRank
         );
+
+        const playerState = game.players.find(
+          (p) => p.id === player.id
+        );
+        
+        if (playerState) {
+          io.to(socket.id).emit("your_hand", {
+            cards: playerState.cards,
+          });
+        }
   
         io.to(payload.roomCode).emit("cards_played", {
           playerId: player.id,
@@ -310,6 +352,43 @@ export function registerSocketHandlers(io: Server): void {
           roomCode: payload.roomCode,
           socketId: socket.id,
           error,
+        });
+      }
+    }
+  );
+
+
+  socket.on(
+    "pass",
+    async (payload: PassPayload) => {
+      try {
+        const player = getPlayerBySocket(
+          payload.roomCode,
+          socket.id
+        );
+  
+        if (!player) {
+          return;
+        }
+  
+        await gameEngine.handlePass(
+          payload.roomCode,
+          player.id
+        );
+  
+        logger.info("Player passed", {
+          roomCode: payload.roomCode,
+          playerId: player.id,
+        });
+  
+      } catch (error) {
+        logger.error("Failed to pass", {
+          roomCode: payload.roomCode,
+          socketId: socket.id,
+          error:
+            error instanceof Error
+              ? error.message
+              : String(error),
         });
       }
     }

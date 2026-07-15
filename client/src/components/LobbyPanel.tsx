@@ -3,13 +3,16 @@ import { socket } from "../services/socket";
 import type { Player } from "../types/socket.types";
 
 interface Props {
+  roomCode: string;
+  setRoomCode: React.Dispatch<React.SetStateAction<string>>;
   players: Player[];
 }
 
 export default function LobbyPanel({
+  roomCode,
+  setRoomCode,
   players,
 }: Props) {
-  const [roomCode, setRoomCode] = useState("");
   const [username, setUsername] = useState("");
   const [userId, setUserId] = useState("");
 
@@ -46,9 +49,7 @@ export default function LobbyPanel({
       <input
         placeholder="Room Code"
         value={roomCode}
-        onChange={(e) =>
-          setRoomCode(e.target.value)
-        }
+        onChange={(e) => setRoomCode(e.target.value)}
       />
 
       <br />
@@ -57,9 +58,7 @@ export default function LobbyPanel({
       <input
         placeholder="Username"
         value={username}
-        onChange={(e) =>
-          setUsername(e.target.value)
-        }
+        onChange={(e) => setUsername(e.target.value)}
       />
 
       <br />
@@ -68,9 +67,7 @@ export default function LobbyPanel({
       <input
         placeholder="User Id"
         value={userId}
-        onChange={(e) =>
-          setUserId(e.target.value)
-        }
+        onChange={(e) => setUserId(e.target.value)}
       />
 
       <br />
@@ -98,9 +95,7 @@ export default function LobbyPanel({
 
       <h3>Players</h3>
 
-      {players.length === 0 && (
-        <p>No players</p>
-      )}
+      {players.length === 0 && <p>No players</p>}
 
       {players.map((player) => (
         <div key={player.id}>

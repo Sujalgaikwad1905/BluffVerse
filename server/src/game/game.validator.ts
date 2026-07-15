@@ -58,6 +58,43 @@ class GameValidator {
       caller,
     };
   }
+
+  validatePass(
+    roomCode: string,
+    playerId: string
+  ): {
+    game: GameState;
+    player: PlayerState;
+  } {
+    const game = this.getGame(roomCode);
+
+    if (game.currentClaimedRank === null) {
+      throw new Error(
+          "Cannot pass before a round has started."
+      );
+  }
+  
+    if (!game.started) {
+      throw new Error("Game has not started");
+    }
+  
+    if (game.phase !== GamePhase.PLAYER_DECISION) {
+      throw new Error("You cannot pass right now");
+    }
+  
+    const player = this.getPlayer(game, playerId);
+  
+    if (game.players[game.currentTurn].id !== playerId) {
+      throw new Error("Not your turn");
+    }
+
+    
+  
+    return {
+      game,
+      player,
+    };
+  }
     
 
   validatePlayCards(
@@ -104,6 +141,28 @@ class GameValidator {
     if (!claimedRank) {
       throw new Error("Claimed rank is required");
     }
+    
+    // First move of a round
+    if (game.currentClaimedRank === null) {
+      return {
+        game,
+        player,
+      };
+    }
+    
+    // During an active round,
+    // every player MUST continue
+    // with the existing claimed rank.
+    if (claimedRank !== game.currentClaimedRank) {
+      throw new Error(
+        `Current claimed rank is ${game.currentClaimedRank}`
+      );
+    }
+    
+    return {
+      game,
+      player,
+    };
 
     return {
       game,

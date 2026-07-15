@@ -5,6 +5,16 @@ class RoomEventQueue {
 
   private processing = new Set<string>();
 
+  clearQueue(roomCode: string): void {
+    const queue = this.queues.get(roomCode);
+  
+    if (!queue) {
+      return;
+    }
+  
+    queue.length = 0;
+  }
+
   async enqueue(
     roomCode: string,
     handler: EventHandler
