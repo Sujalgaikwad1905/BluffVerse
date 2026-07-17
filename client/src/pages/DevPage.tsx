@@ -1,76 +1,132 @@
-import { useState } from "react";
-
 import ConnectionPanel from "../components/ConnectionPanel";
+
 import LobbyPanel from "../components/LobbyPanel";
+
 import HandPanel from "../components/HandPanel";
+
 import GameStatusPanel from "../components/GameStatusPanel";
+
+import WinnerModal from "../components/game/WinnerModal";
 
 import { useSocket } from "../hooks/useSocket";
 
-export default function DevPage() {
+import "../styles/game.css";
+
+
+
+interface Props {
+
+  roomCode: string;
+
+  username: string;
+
+  userId: string;
+
+}
+
+
+
+export default function DevPage({
+
+  roomCode,
+
+  username,
+
+  userId,
+
+}: Props) {
+
   const {
+
     connected,
+
     players,
+
     hand,
+
     gameState,
+
     winner,
+
   } = useSocket();
 
 
-  
-  const [roomCode, setRoomCode] =
-    useState("");
-
-    
 
   return (
 
+    <div className="game-root">
 
-    
-    <div
-      style={{
-        width: 1000,
-        margin: "40px auto",
-        fontFamily: "sans-serif",
-      }}
-    >
-      <h1>🎮 BluffVerse Developer Panel</h1>
+      <div className="game-bg-glow" aria-hidden />
 
-      {winner && (
-  <div
-    style={{
-      background: "green",
-      color: "white",
-      padding: 20,
-      marginBottom: 20,
-      fontSize: 28,
-      fontWeight: "bold",
-      textAlign: "center",
-      borderRadius: 8,
-    }}
-  >
-    🏆 Winner: {winner}
-  </div>
-)}
 
-      
 
-      <ConnectionPanel connected={connected} />
+      <header className="game-header">
 
-      <LobbyPanel
-        roomCode={roomCode}
-        setRoomCode={setRoomCode}
-        players={players}
-      />
+        <div className="game-brand">
 
-      <HandPanel
-        roomCode={roomCode}
-        hand={hand}
-      />
+          <span className="game-logo" aria-hidden>🎭</span>
 
-      <GameStatusPanel
-        gameState={gameState}
-      />
+          <div>
+
+            <h1 className="game-title">BluffVerse</h1>
+
+            <p className="game-tagline">Read minds. Lie better.</p>
+
+          </div>
+
+        </div>
+
+        <ConnectionPanel connected={connected} />
+
+      </header>
+
+
+
+      <WinnerModal winner={winner} />
+
+
+
+      <div className="game-layout">
+
+        <LobbyPanel
+
+          roomCode={roomCode}
+
+          username={username}
+
+          userId={userId}
+
+          players={players}
+
+          currentTurn={gameState.currentTurn}
+
+        />
+
+
+
+        <GameStatusPanel
+
+          gameState={gameState}
+
+          players={players}
+
+          userId={userId}
+
+        />
+
+      </div>
+
+
+
+      <div className="game-hand-section">
+
+        <HandPanel roomCode={roomCode} hand={hand} />
+
+      </div>
+
     </div>
+
   );
+
 }
+

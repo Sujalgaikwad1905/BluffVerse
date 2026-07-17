@@ -1,4 +1,5 @@
 import { socket } from "../services/socket";
+import Button from "./common/Button";
 
 interface Props {
   connected: boolean;
@@ -16,29 +17,24 @@ export default function ConnectionPanel({
   }
 
   return (
-    <div
-      style={{
-        border: "1px solid gray",
-        padding: 20,
-        marginBottom: 20,
-      }}
-    >
-      <h2>Connection</h2>
-
-      <p>
-        Status :{" "}
-        {connected ? "🟢 Connected" : "🔴 Disconnected"}
-      </p>
-
-      {!connected ? (
-        <button onClick={connect}>
-          Connect
-        </button>
-      ) : (
-        <button onClick={disconnect}>
-          Disconnect
-        </button>
-      )}
+    <div className="connection-badge-wrapper">
+      <div
+        className={`connection-badge ${connected ? "connected" : "disconnected"}`}
+      >
+        <span
+          className={`connection-dot ${connected ? "connected" : "disconnected"}`}
+        />
+        {connected ? "Connected" : "Disconnected"}
+        {!connected ? (
+          <Button variant="secondary" size="sm" onClick={connect}>
+            Connect
+          </Button>
+        ) : (
+          <Button variant="secondary" size="sm" onClick={disconnect}>
+            Disconnect
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

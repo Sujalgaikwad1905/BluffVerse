@@ -1,22 +1,23 @@
-import { useState } from "react";
 import { socket } from "../services/socket";
-
 import type { Player } from "../types/socket.types";
+import Button from "./common/Button";
+import PlayerCard from "./lobby/PlayerCard";
 
 interface Props {
   roomCode: string;
-  setRoomCode: React.Dispatch<React.SetStateAction<string>>;
+  username: string;
+  userId: string;
   players: Player[];
+  currentTurn?: string;
 }
 
 export default function LobbyPanel({
   roomCode,
-  setRoomCode,
+  username,
+  userId,
   players,
+  currentTurn,
 }: Props) {
-  const [username, setUsername] = useState("");
-  const [userId, setUserId] = useState("");
-
   function joinRoom() {
     socket.emit("join_room", {
       roomCode,
@@ -38,74 +39,55 @@ export default function LobbyPanel({
   }
 
   return (
-    <div
-      style={{
-        border: "1px solid gray",
-        padding: 20,
-        marginBottom: 20,
-      }}
-    >
-      <h2>Lobby</h2>
+    <div className="panel lobby-panel">
+      <div className="lobby-head">
+        <h2 className="panel-title">Lobby</h2>
+        <span className="lobby-tag">Live room</span>
+      </div>
 
-      <input
-        placeholder="Room Code"
-        value={roomCode}
-        onChange={(e) => setRoomCode(e.target.value)}
-      />
+      <p className="field-label">Room code</p>
+      <div className="room-code">{roomCode}</div>
 
-      <br />
-      <br />
+      <div className="btn-group lobby-actions">
+        <Button variant="join" onClick={joinRoom}>
+          Join Room
+        </Button>
+        <Button variant="ready" onClick={ready}>
+          Ready
+        </Button>
+        <Button variant="gold" onClick={startGame}>
+          Start Game
+        </Button>
+      </div>
 
-      <input
-        placeholder="Username"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-      />
+      <hr className="panel-divider" />
 
-      <br />
-      <br />
+      <h3 className="section-label">
+        Squad · {players.length}
+      </h3>
 
-      <input
-        placeholder="User Id"
-        value={userId}
-        onChange={(e) => setUserId(e.target.value)}
-      />
-
-      <br />
-      <br />
-
-      <button onClick={joinRoom}>
-        Join Room
-      </button>
-
-      <button
-        onClick={ready}
-        style={{ marginLeft: 10 }}
-      >
-        Ready
-      </button>
-
-      <button
-        onClick={startGame}
-        style={{ marginLeft: 10 }}
-      >
-        Start Game
-      </button>
-
-      <hr />
-
-      <h3>Players</h3>
-
-      {players.length === 0 && <p>No players</p>}
-
-      {players.map((player) => (
-        <div key={player.id}>
-          {player.username}
-            {player.isHost ? " 👑" : ""}
-            {player.ready ? " ✅" : " ❌"}
-          
+      {players.length === 0 ? (
+        <div className="empty-lobby">
+          <div className="empty-lobby-icon" aria-hidden>
+            <span>🎮</span>
+          </div>
+          <p className="empty-lobby-title">Room is empty</p>
+          <p className="empty-lobby-text">
+            Hit join to enter the arena and invite your rivals.
+          </p>
         </div>
-      ))}
+      ) : (
+        <div className="player-list">
+          {players.map((player) => (
+            <PlayerCard
+              key={player.id}
+              player={player}
+              isSelf={player.id === userId}
+              isTurn={player.id === currentTurn}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

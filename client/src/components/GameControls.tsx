@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { socket } from "../services/socket";
 import type { Card } from "../types/socket.types";
+import Button from "./common/Button";
 
 interface Props {
   roomCode: string;
@@ -8,20 +9,20 @@ interface Props {
 }
 
 const ranks = [
-    "A",
-    "2",
-    "3",
-    "4",
-    "5",
-    "6",
-    "7",
-    "8",
-    "9",
-    "10",
-    "J",
-    "Q",
-    "K",
-  ];
+  "A",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "10",
+  "J",
+  "Q",
+  "K",
+];
 
 export default function GameControls({
   roomCode,
@@ -55,54 +56,46 @@ export default function GameControls({
   }
 
   return (
-    <div
-      style={{
-        border: "1px solid gray",
-        padding: 20,
-      }}
-    >
-      <h2>Play Cards</h2>
+    <div className="controls-bar">
+      <div className="controls-info">
+        <span className="controls-info-label">Selected</span>
+        <strong>{selectedCards.length}</strong>
+        <span className="controls-info-max">/ 4</span>
+      </div>
 
-      <p>
-        Selected Cards : {selectedCards.length}
-      </p>
-
-      <select
-        value={claimedRank}
-        onChange={(e) =>
-          setClaimedRank(e.target.value)
-        }
-      >
-        {ranks.map((rank) => (
-          <option
-            key={rank}
-            value={rank}
-          >
-            {rank}
-          </option>
-        ))}
-      </select>
-
-      <button
-        style={{ marginLeft: 10 }}
-        onClick={play}
-      >
-        PLAY
-      </button>
-
-      <button
-        style={{ marginLeft: 10 }}
-        onClick={pass}
-      >
-        PASS
-      </button>
-
-      <button
-        style={{ marginLeft: 10 }}
-        onClick={callBluff}
+      <div className="controls-select-wrap">
+        <label htmlFor="claimed-rank">Claim as</label>
+        <select
+          id="claimed-rank"
+          className="controls-select"
+          value={claimedRank}
+          onChange={(e) =>
+            setClaimedRank(e.target.value)
+          }
         >
-        CALL BLUFF
-        </button>
+          {ranks.map((rank) => (
+            <option key={rank} value={rank}>
+              {rank}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="controls-actions">
+        <Button
+          variant="play"
+          onClick={play}
+          disabled={selectedCards.length === 0}
+        >
+          Play
+        </Button>
+        <Button variant="pass" onClick={pass}>
+          Pass
+        </Button>
+        <Button variant="bluff" onClick={callBluff}>
+          Call Bluff
+        </Button>
+      </div>
     </div>
   );
 }
