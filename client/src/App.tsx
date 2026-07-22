@@ -1,44 +1,32 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { GameScreen } from "@/components/game/GameScreen";
+import { WaitingRoom } from "@/components/lobby/WaitingRoom";
+import { JoinRoom } from "@/components/lobby/JoinRoom";
+import { useSocketEvents } from "@/hooks/useSocketEvents";
+import { useGameStore } from "@/store/gameStore";
 
-import HomePage from "./pages/HomePage";
-import DevPage from "./pages/DevPage";
+type View = "join" | "lobby" | "game";
 
-export default function App() {
-  const [joined, setJoined] =
-    useState(false);
+export function App() {
+  const [view, setView] = useState<View>("join");
 
-  const [joinData, setJoinData] =
-    useState({
-      roomCode: "",
-      username: "",
-      userId: "",
-    });
+  useSocketEvents();
 
-  if (!joined) {
-    return (
-      <HomePage
-        onJoin={(
-          roomCode,
-          username,
-          userId
-        ) => {
-          setJoinData({
-            roomCode,
-            username,
-            userId,
-          });
+  const currentTurn = useGameStore((state) => state.currentTurn);
 
-          setJoined(true);
-        }}
-      />
-    );
+  useEffect(() => {
+    if (currentTurn) {
+      setView("game");
+    }
+  }, [currentTurn]);
+
+  if (view === "join") {
+    return <JoinRoom onJoin={() => setView("lobby")} />;
   }
 
-  return (
-    <DevPage
-      roomCode={joinData.roomCode}
-      username={joinData.username}
-      userId={joinData.userId}
-    />
-  );
+  if (view === "game") {
+    return <GameScreen onLeave={() => setView("join")} />;
+  }
+
+  return <WaitingRoom />;
 }

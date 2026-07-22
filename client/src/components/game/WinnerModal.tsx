@@ -1,91 +1,166 @@
-import { motion, AnimatePresence } from "framer-motion";
-import Button from "../common/Button";
+import type { Player } from "@/lib/game-types";
+import { Trophy, RotateCcw, LogOut } from "lucide-react";
 
-interface Props {
-  winner: string | null;
+interface WinnerModalProps {
+  winner: Player;
+  isLocalPlayerWinner: boolean;
+  onPlayAgain: () => void;
+  onLeave: () => void;
 }
 
-const CONFETTI = Array.from({ length: 28 }, (_, i) => ({
-  id: i,
-  left: `${(i * 17 + 7) % 100}%`,
-  delay: (i % 7) * 0.12,
-  hue: (i * 47) % 360,
-  size: 6 + (i % 4) * 2,
-}));
-
-function reload() {
-  window.location.reload();
-}
-
-export default function WinnerModal({ winner }: Props) {
+export function WinnerModal({
+  winner,
+  isLocalPlayerWinner,
+  onPlayAgain,
+  onLeave,
+}: WinnerModalProps) {
   return (
-    <AnimatePresence>
-      {winner && (
-        <motion.div
-          className="winner-overlay"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.35 }}
+    <div
+      className="fixed inset-0 flex items-center justify-center z-50"
+      style={{ background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)" }}
+    >
+      <div
+        className="flex flex-col items-center gap-6 p-8 rounded-3xl animate-slide-in-up"
+        style={{
+          background: "linear-gradient(180deg, #0f1628 0%, #0a0e1a 100%)",
+          border: isLocalPlayerWinner
+            ? "1px solid rgba(212,175,55,0.5)"
+            : "1px solid rgba(255,255,255,0.12)",
+          boxShadow: isLocalPlayerWinner
+            ? "0 0 60px 16px rgba(212,175,55,0.2), 0 24px 80px rgba(0,0,0,0.8)"
+            : "0 24px 80px rgba(0,0,0,0.8)",
+          maxWidth: "380px",
+          width: "90%",
+        }}
+      >
+        {/* Trophy */}
+        <div
+          className={`flex items-center justify-center rounded-full ${isLocalPlayerWinner ? "animate-winner-glow" : ""}`}
+          style={{
+            width: "96px",
+            height: "96px",
+            background: isLocalPlayerWinner
+              ? "linear-gradient(135deg, rgba(212,175,55,0.3) 0%, rgba(212,175,55,0.1) 100%)"
+              : "rgba(255,255,255,0.05)",
+            border: isLocalPlayerWinner
+              ? "2px solid rgba(212,175,55,0.6)"
+              : "2px solid rgba(255,255,255,0.1)",
+          }}
         >
-          <div className="winner-confetti" aria-hidden>
-            {CONFETTI.map((piece) => (
-              <span
-                key={piece.id}
-                className="confetti-piece"
-                style={{
-                  left: piece.left,
-                  animationDelay: `${piece.delay}s`,
-                  background: `hsl(${piece.hue} 85% 58%)`,
-                  width: piece.size,
-                  height: piece.size * 1.4,
-                }}
-              />
-            ))}
-          </div>
+          <Trophy
+            size={44}
+            style={{
+              color: isLocalPlayerWinner ? "#d4af37" : "rgba(255,255,255,0.5)",
+            }}
+          />
+        </div>
 
-          <motion.div
-            className="winner-modal"
-            initial={{ scale: 0.88, opacity: 0, y: 32 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.92, opacity: 0, y: 16 }}
-            transition={{
-              type: "spring",
-              stiffness: 280,
-              damping: 24,
+        {/* Title */}
+        <div className="flex flex-col items-center gap-2 text-center">
+          <div
+            className="font-black tracking-widest uppercase"
+            style={{
+              fontSize: "32px",
+              color: isLocalPlayerWinner ? "#d4af37" : "#fff",
+              fontFamily: "'Rajdhani', sans-serif",
+              letterSpacing: "0.12em",
+              lineHeight: 1,
             }}
           >
-            <motion.div
-              className="winner-trophy"
-              animate={{
-                y: [0, -6, 0],
-                rotate: [0, -4, 4, 0],
-              }}
-              transition={{
-                duration: 2.4,
-                repeat: Infinity,
-                ease: "easeInOut",
+            {isLocalPlayerWinner ? "You Win!" : "Game Over"}
+          </div>
+          <div
+            className="text-sm font-medium"
+            style={{ color: "rgba(255,255,255,0.5)" }}
+          >
+            {isLocalPlayerWinner
+              ? "Congratulations! You outwitted everyone."
+              : `${winner.username} wins this round.`}
+          </div>
+        </div>
+
+        {/* Winner card */}
+        <div
+          className="flex items-center gap-3 w-full px-4 py-3 rounded-xl"
+          style={{
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.08)",
+          }}
+        >
+          <div
+            className="flex items-center justify-center rounded-full font-black text-lg shrink-0"
+            style={{
+              width: "48px",
+              height: "48px",
+              background: isLocalPlayerWinner
+                ? "linear-gradient(135deg, rgba(212,175,55,0.4) 0%, rgba(212,175,55,0.2) 100%)"
+                : "rgba(255,255,255,0.08)",
+              border: `2px solid ${isLocalPlayerWinner ? "rgba(212,175,55,0.6)" : "rgba(255,255,255,0.12)"}`,
+              color: isLocalPlayerWinner ? "#d4af37" : "#fff",
+              fontFamily: "'Rajdhani', sans-serif",
+            }}
+          >
+            {winner.avatar}
+          </div>
+          <div>
+            <div
+              className="font-black text-base"
+              style={{ color: "#fff", fontFamily: "'Rajdhani', sans-serif" }}
+            >
+              {winner.username}
+            </div>
+            <div className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+              Bluff Master
+            </div>
+          </div>
+          {isLocalPlayerWinner && (
+            <div
+              className="ml-auto text-xs font-bold px-2 py-1 rounded-full"
+              style={{
+                background: "rgba(212,175,55,0.15)",
+                border: "1px solid rgba(212,175,55,0.4)",
+                color: "#d4af37",
               }}
             >
-              🏆
-            </motion.div>
-
-            <p className="winner-eyebrow">Match complete</p>
-            <h2 className="winner-heading">Winner</h2>
-            <p className="winner-name">{winner}</p>
-            <p className="winner-sub">Out-bluffed everyone at the table.</p>
-
-            <div className="winner-actions">
-              <Button variant="play" onClick={reload}>
-                Play Again
-              </Button>
-              <Button variant="pass" onClick={reload}>
-                Exit
-              </Button>
+              MVP
             </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-3 w-full">
+          <button
+            onClick={onPlayAgain}
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-black transition-all"
+            style={{
+              background: "linear-gradient(180deg, #22c55e 0%, #16a34a 100%)",
+              border: "1px solid #16a34a",
+              color: "#fff",
+              fontFamily: "'Rajdhani', sans-serif",
+              fontSize: "15px",
+              letterSpacing: "0.08em",
+              boxShadow: "0 4px 16px rgba(34,197,94,0.4)",
+            }}
+          >
+            <RotateCcw size={16} />
+            Play Again
+          </button>
+          <button
+            onClick={onLeave}
+            className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold transition-all"
+            style={{
+              background: "rgba(239,68,68,0.1)",
+              border: "1px solid rgba(239,68,68,0.25)",
+              color: "#ef4444",
+              fontFamily: "'Rajdhani', sans-serif",
+              fontSize: "14px",
+            }}
+          >
+            <LogOut size={15} />
+            Leave
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
