@@ -1,19 +1,26 @@
-# Node
-node_modules
+# Dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Build
+client/dist/
+server/dist/
 
 # Environment
 .env
-
-# Build
-dist
-build
+**/.env
 
 # Logs
 *.log
 
-# IDE
-.vscode
-
 # OS
 .DS_Store
 Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# TypeScript
+*.tsbuildinfo
