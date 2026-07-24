@@ -1,7 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
-import type { Rank } from "@/lib/game-types";
+import type { Player, Rank } from "@/lib/game-types";
 import { useGameStore } from "@/store/gameStore";
+import { socket } from "@/socket/socket";
 import { Header } from "./Header";
 import { PlayerSidebar } from "./PlayerSidebar";
 import { GameTable } from "./GameTable";
@@ -15,21 +16,142 @@ interface GameScreenProps {
 
 export function GameScreen({ onLeave }: GameScreenProps) {
   const hand = useGameStore((state) => state.myHand);
+  const roomCode = useGameStore((state) => state.roomCode);
+  const userId = useGameStore((state) => state.userId);
+  const lobbyPlayers = useGameStore((state) => state.players);
+  const gamePlayers = useGameStore((state) => state.gamePlayers);
+  const currentClaim = useGameStore((state) => state.currentClaim);
+  const discardPile = useGameStore((state) => state.discardPile);
+  const lastPlayedCards = useGameStore((state) => state.lastPlayedCards);
+  const roundMessage = useGameStore((state) => state.roundMessage);
+  const currentTurn = useGameStore((state) => state.currentTurn);
+  const claimedRank = useGameStore((state) => state.claimedRank);
 
-const gamePlayers = useGameStore((state) => state.gamePlayers);
-const currentClaim = useGameStore((state) => state.currentClaim);
-const discardPile = useGameStore((state) => state.discardPile);
-const lastPlayedCards = useGameStore((state) => state.lastPlayedCards);
-const roundMessage = useGameStore((state) => state.roundMessage);
+  const setCurrentClaim = useGameStore((state) => state.setCurrentClaim);
+  const setDiscardPile = useGameStore((state) => state.setDiscardPile);
+  const setLastPlayedCards = useGameStore((state) => state.setLastPlayedCards);
+  const setRoundMessage = useGameStore((state) => state.setRoundMessage);
+  const setGamePlayers = useGameStore((state) => state.setGamePlayers);
+  const setCurrentTurn = useGameStore((state) => state.setCurrentTurn);
+  const setClaimedRank = useGameStore((state) => state.setClaimedRank);
 
-const setMyHand = useGameStore((state) => state.setMyHand);
   const [selectedCards, setSelectedCards] = useState<Set<string>>(new Set());
   const [selectedRank, setSelectedRank] = useState<Rank | null>(null);
   const [showWinner, setShowWinner] = useState(false);
+  const [winnerId, setWinnerId] = useState<string | null>(null);
+  const [isBluffWindowActive, setIsBluffWindowActive] = useState(false);
+  const [lastPlayedPlayerId, setLastPlayedPlayerId] = useState<string | null>(null);
 
-  const localPlayer = gamePlayers.find((p) => p.isLocalPlayer)!;
-  const isMyTurn = localPlayer?.isCurrentTurn ?? false;
-const canCallBluff = !!currentClaim && !isMyTurn;
+  useEffect(() => {
+    const derivedPlayers: Player[] = lobbyPlayers.map((player, index) => ({
+      id: player.id,
+      username: player.username,
+      avatar: player.avatar,
+      cardCount: player.id === userId ? hand.length : 0,
+      isCurrentTurn: currentTurn === player.id,
+      isEliminated: false,
+      isLocalPlayer: player.id === userId,
+      position: index === 0 ? "bottom" : index === 1 ? "right" : index === 2 ? "left" : "top",
+    }));
+
+    setGamePlayers(derivedPlayers);
+  }, [lobbyPlayers, currentTurn, hand.length, userId, setGamePlayers]);
+
+  useEffect(() => {
+    if (!isBluffWindowActive) {
+      return;
+    }
+
+    const timerId = window.setTimeout(() => {
+      setIsBluffWindowActive(false);
+    }, 3000);
+
+    return () => {
+      window.clearTimeout(timerId);
+    };
+  }, [isBluffWindowActive]);
+
+  useEffect(() => {
+    const handleCardsPlayed = ({ playerId, claimedRank: nextClaimedRank, cardsPlayed }: any) => {
+      const player = lobbyPlayers.find((entry) => entry.id === playerId);
+      setCurrentClaim({
+        rank: nextClaimedRank,
+        quantity: cardsPlayed,
+        playerUsername: player?.username ?? "Unknown",
+      });
+
+      setClaimedRank(nextClaimedRank);
+      setDiscardPile([]);
+      setLastPlayedCards([]);
+      setRoundMessage(null);
+      setLastPlayedPlayerId(playerId);
+      setIsBluffWindowActive(true);
+    };
+
+    const handleTurnChanged = ({ currentTurn: nextTurn, claimedRank: nextClaimedRank }: any) => {
+      setCurrentTurn(nextTurn);
+      setClaimedRank(nextClaimedRank);
+      setIsBluffWindowActive(false);
+      setLastPlayedPlayerId(null);
+      if (nextClaimedRank === null) {
+        setCurrentClaim(null);
+      }
+      setRoundMessage(null);
+    };
+
+    const handleBluffResolved = () => {
+      setRoundMessage("Bluff resolved");
+      setCurrentClaim(null);
+      setIsBluffWindowActive(false);
+      setLastPlayedPlayerId(null);
+    };
+
+    const handleGameOver = ({ winnerUsername }: { winnerUsername?: string }) => {
+      setShowWinner(true);
+      setWinnerId(winnerUsername ?? null);
+      setRoundMessage(winnerUsername ? `${winnerUsername} wins!` : "Game over");
+      setCurrentClaim(null);
+      setIsBluffWindowActive(false);
+      setLastPlayedPlayerId(null);
+    };
+
+    socket.on("cards_played", handleCardsPlayed);
+    socket.on("turn_changed", handleTurnChanged);
+    socket.on("bluff_resolved", handleBluffResolved);
+    socket.on("game_over", handleGameOver);
+
+    return () => {
+      socket.off("cards_played", handleCardsPlayed);
+      socket.off("turn_changed", handleTurnChanged);
+      socket.off("bluff_resolved", handleBluffResolved);
+      socket.off("game_over", handleGameOver);
+    };
+  }, [lobbyPlayers, setCurrentClaim, setCurrentTurn, setClaimedRank, setDiscardPile, setLastPlayedCards, setRoundMessage]);
+
+  const localPlayer = gamePlayers.find((p) => p.isLocalPlayer);
+  const actualWinner = gamePlayers.find((player) => player.username === winnerId || player.id === winnerId) ?? null;
+  const isMyTurn = (localPlayer?.isCurrentTurn ?? false) && !isBluffWindowActive;
+
+  console.log("========== BLUFF DEBUG ==========");
+console.log({
+  userId,
+  lastPlayedPlayerId,
+  isBluffWindowActive,
+  currentClaim,
+  claimedRank,
+});
+
+console.log(
+  "isBluffWindowActive:",
+  isBluffWindowActive,
+  "currentClaim:",
+  !!currentClaim,
+  "claimedRank:",
+  claimedRank !== null,
+  "differentPlayer:",
+  userId !== lastPlayedPlayerId
+);
+  const canCallBluff = isBluffWindowActive && !!currentClaim &&  userId !== lastPlayedPlayerId;
 
   const handleCardSelect = useCallback(
     (cardId: string) => {
@@ -37,9 +159,12 @@ const canCallBluff = !!currentClaim && !isMyTurn;
         const next = new Set(prev);
         if (next.has(cardId)) {
           next.delete(cardId);
-        } else {
-          next.add(cardId);
+          return next;
         }
+        if (next.size >= 4) {
+          return prev;
+        }
+        next.add(cardId);
         return next;
       });
     },
@@ -47,73 +172,38 @@ const canCallBluff = !!currentClaim && !isMyTurn;
   );
 
   const handlePlay = useCallback(() => {
-    if (!selectedRank || selectedCards.size === 0) return;
+    if (!selectedRank || selectedCards.size === 0 || !roomCode) return;
 
-    // Update game state with new claim
-    const newClaim = {
-      rank: selectedRank,
-      quantity: selectedCards.size,
-      playerUsername: localPlayer.username,
-    };
+    const selectedCardsArray = hand.filter((card) => {
+      const selectionKey = card.id || `${card.rank}-${card.suit}`;
+      return selectedCards.has(selectionKey);
+    });
 
-    // Remove played cards from hand
-    const newHand = hand.filter((c) => !selectedCards.has(c.id));
-
-    setHand(newHand);
-    setGameState((prev) => ({
-      ...prev,
-      currentClaim: newClaim,
-      players: prev.players.map((p) =>
-        p.isLocalPlayer
-          ? { ...p, cardCount: newHand.length, isCurrentTurn: false }
-          : p.id === "p2"
-          ? { ...p, isCurrentTurn: true }
-          : p
-      ),
-    }));
+    socket.emit("play_cards", {
+      roomCode,
+      cards: selectedCardsArray,
+      claimedRank: selectedRank,
+    });
 
     setSelectedCards(new Set());
     setSelectedRank(null);
-
-    // Check for win condition
-    if (newHand.length === 0) {
-      setTimeout(() => setShowWinner(true), 800);
-    }
-  }, [selectedRank, selectedCards, hand, localPlayer.username]);
+  }, [selectedRank, selectedCards, hand, roomCode]);
 
   const handleCallBluff = useCallback(() => {
-    // Flash animation + reveal
-    setGameState((prev) => ({
-      ...prev,
-      roundMessage: "BLUFF CALLED! Revealing cards...",
-      currentClaim: null,
-    }));
+    if (!roomCode) return;
 
-    setTimeout(() => {
-      setGameState((prev) => ({
-        ...prev,
-        roundMessage: null,
-        players: prev.players.map((p) =>
-          p.isLocalPlayer ? { ...p, isCurrentTurn: true } : { ...p, isCurrentTurn: false }
-        ),
-      }));
-    }, 2000);
-  }, []);
-
-  const handlePass = useCallback(() => {
-    setGameState((prev) => ({
-      ...prev,
-      players: prev.players.map((p) =>
-        p.isLocalPlayer
-          ? { ...p, isCurrentTurn: false }
-          : p.id === "p2"
-          ? { ...p, isCurrentTurn: true }
-          : p
-      ),
-    }));
+    socket.emit("call_bluff", { roomCode });
     setSelectedCards(new Set());
     setSelectedRank(null);
-  }, []);
+  }, [roomCode]);
+
+  const handlePass = useCallback(() => {
+    if (!roomCode) return;
+
+    socket.emit("pass", { roomCode });
+    setSelectedCards(new Set());
+    setSelectedRank(null);
+  }, [roomCode]);
 
   const handleLeave = useCallback(() => {
     if (onLeave) {
@@ -124,11 +214,10 @@ const canCallBluff = !!currentClaim && !isMyTurn;
   }, [onLeave]);
 
   const handlePlayAgain = useCallback(() => {
-    setGameState(MOCK_GAME_STATE);
-    setHand(MOCK_HAND);
     setSelectedCards(new Set());
     setSelectedRank(null);
     setShowWinner(false);
+    setWinnerId(null);
   }, []);
 
   return (
@@ -197,10 +286,10 @@ const canCallBluff = !!currentClaim && !isMyTurn;
       )}
 
             {/* Winner Modal */}
-            {false && (
+            {showWinner && actualWinner && (
         <WinnerModal
-          winner={localPlayer}
-          isLocalPlayerWinner={true}
+          winner={actualWinner}
+          isLocalPlayerWinner={actualWinner.id === userId}
           onPlayAgain={handlePlayAgain}
           onLeave={handleLeave}
         />

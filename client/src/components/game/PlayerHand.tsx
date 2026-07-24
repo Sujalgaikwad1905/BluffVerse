@@ -16,6 +16,8 @@ export function PlayerHand({
 }: PlayerHandProps) {
   const count = cards.length;
 
+  const getCardSelectionKey = (card: Card) => card.id || `${card.rank}-${card.suit}`;
+
   // Calculate fan spread angles
   const spread = Math.min(count * 5, 50);
   const getRotation = (index: number) => {
@@ -108,7 +110,8 @@ export function PlayerHand({
           }}
         >
           {cards.map((card, i) => {
-            const selected = selectedCards.has(card.id);
+            const cardSelectionKey = getCardSelectionKey(card);
+            const selected = selectedCards.has(cardSelectionKey);
             const rotation = getRotation(i);
             const translateY = getTranslateY(i);
 
@@ -140,7 +143,7 @@ export function PlayerHand({
                     (e.currentTarget as HTMLDivElement).style.transform = `translateX(-50%) rotate(${rotation}deg)`;
                   }
                 }}
-                onClick={() => isMyTurn && onCardSelect(card.id)}
+                onClick={() => isMyTurn && onCardSelect(cardSelectionKey)}
               >
                 <PlayingCard
                   card={card}

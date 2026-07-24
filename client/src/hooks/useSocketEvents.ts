@@ -8,53 +8,65 @@ export function useSocketEvents() {
   const setMyHand = useGameStore((state) => state.setMyHand);
   const setCurrentTurn = useGameStore((state) => state.setCurrentTurn);
   const setClaimedRank = useGameStore((state) => state.setClaimedRank);
+  const setCurrentClaim = useGameStore((state) => state.setCurrentClaim);
+  const setDiscardPile = useGameStore((state) => state.setDiscardPile);
+  const setLastPlayedCards = useGameStore((state) => state.setLastPlayedCards);
+  const setRoundMessage = useGameStore((state) => state.setRoundMessage);
   const userId = useGameStore((state) => state.userId);
 
   useEffect(() => {
-    socket.on("player_list", (players) => {
+    const handlePlayerList = (incomingPlayers: Array<{ id: string; username: string; isHost: boolean; ready: boolean }>) => {
       setPlayers(
-        players.map((player: any) => ({
+        incomingPlayers.map((player) => ({
           id: player.id,
           username: player.username,
           avatar: "",
           isHost: player.isHost,
           isReady: player.ready,
           isConnected: true,
-
-          // We'll fix this properly after login/user state is added.
           isLocalPlayer: player.id === userId,
         }))
       );
-    });
+    };
 
-    socket.on("player_count", ({ playerCount }) => {
+    const handlePlayerCount = ({ playerCount }: { playerCount: number }) => {
       setPlayerCount(playerCount);
-    });
+    };
 
-    socket.on("your_hand", ({ cards }) => {
+    const handleYourHand = ({ cards }: { cards: Array<{ id: string; rank: string; suit: string; faceUp: boolean }> }) => {
       setMyHand(cards);
-    });
+    };
 
-    socket.on(
-      "game_started",
-      ({ currentTurn, claimedRank }) => {
-        setCurrentTurn(currentTurn);
-        setClaimedRank(claimedRank);
-      }
-    );
+    const handleGameStarted = ({ currentTurn, claimedRank }: { currentTurn: string | null; claimedRank: string | null }) => {
+      setCurrentTurn(currentTurn);
+      setClaimedRank(claimedRank);
+      setCurrentClaim(null);
+      setDiscardPile([]);
+      setLastPlayedCards([]);
+      setRoundMessage(null);
+    };
+
+    socket.on("player_list", handlePlayerList);
+    socket.on("player_count", handlePlayerCount);
+    socket.on("your_hand", handleYourHand);
+    socket.on("game_started", handleGameStarted);
 
     return () => {
-      socket.off("player_list");
-      socket.off("player_count");
-      socket.off("your_hand");
-      socket.off("game_started");
+      socket.off("player_list", handlePlayerList);
+      socket.off("player_count", handlePlayerCount);
+      socket.off("your_hand", handleYourHand);
+      socket.off("game_started", handleGameStarted);
     };
-}, [
+  }, [
     userId,
     setPlayers,
     setPlayerCount,
     setMyHand,
     setCurrentTurn,
     setClaimedRank,
+    setCurrentClaim,
+    setDiscardPile,
+    setLastPlayedCards,
+    setRoundMessage,
   ]);
 }

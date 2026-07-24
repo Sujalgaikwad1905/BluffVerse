@@ -22,10 +22,21 @@ export function ActionBar({
   onCallBluff,
   onPass,
   isMyTurn,
-  currentClaim,
   canCallBluff,
 }: ActionBarProps) {
   const canPlay = isMyTurn && selectedRank !== null && selectedCardCount > 0;
+
+  const handlePlay = () => {
+    onPlay();
+  };
+
+  const handleCallBluff = () => {
+    onCallBluff();
+  };
+
+  const handlePass = () => {
+    onPass();
+  };
 
   return (
     <div
@@ -59,7 +70,7 @@ export function ActionBar({
       <div className="flex items-center gap-2 shrink-0">
         {/* PLAY */}
         <button
-          onClick={onPlay}
+          onClick={handlePlay}
           disabled={!canPlay}
           className="flex flex-col items-center justify-center rounded-xl font-black transition-all duration-200 select-none"
           style={{
@@ -87,7 +98,7 @@ export function ActionBar({
 
         {/* CALL BLUFF — the star button */}
         <button
-          onClick={onCallBluff}
+          onClick={handleCallBluff}
           disabled={!canCallBluff}
           className="flex flex-col items-center justify-center rounded-xl font-black transition-all duration-200 select-none relative"
           style={{
@@ -130,7 +141,7 @@ export function ActionBar({
 
         {/* PASS */}
         <button
-          onClick={onPass}
+          onClick={handlePass}
           disabled={!isMyTurn}
           className="flex flex-col items-center justify-center rounded-xl font-black transition-all duration-200 select-none"
           style={{
