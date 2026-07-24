@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import type { Card, Rank } from "@/lib/game-types";
 import { socket } from "@/socket/socket";
 import { useGameStore } from "@/store/gameStore";
 
@@ -33,11 +34,11 @@ export function useSocketEvents() {
       setPlayerCount(playerCount);
     };
 
-    const handleYourHand = ({ cards }: { cards: Array<{ id: string; rank: string; suit: string; faceUp: boolean }> }) => {
+    const handleYourHand = ({ cards }: { cards: Card[] }) => {
       setMyHand(cards);
     };
 
-    const handleGameStarted = ({ currentTurn, claimedRank }: { currentTurn: string | null; claimedRank: string | null }) => {
+    const handleGameStarted = ({ currentTurn, claimedRank }: { currentTurn: string | null; claimedRank: Rank | null }) => {
       setCurrentTurn(currentTurn);
       setClaimedRank(claimedRank);
       setCurrentClaim(null);

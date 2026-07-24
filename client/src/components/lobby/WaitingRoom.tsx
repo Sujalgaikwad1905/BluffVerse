@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Copy, Users, Play, UserPlus, LogOut, CheckCircle2 } from "lucide-react";
-import type { LobbyPlayer } from "@/lib/game-types";
 import { Header } from "@/components/game/Header";
 import { LobbyPlayerRow } from "./LobbyPlayerRow";
 import { useGameStore } from "@/store/gameStore";
@@ -11,17 +10,10 @@ import { socket } from "@/socket/socket";
 
 const MAX_PLAYERS = 6;
 
-interface WaitingRoomProps {
-  onStartGame?: () => void;
-}
-
-export function WaitingRoom({ onStartGame }: WaitingRoomProps) {
-  
-
+export function WaitingRoom() {
   const players = useGameStore((state) => state.players);
   const roomCode = useGameStore((state) => state.roomCode);
-  const setPlayers = useGameStore((state) => state.setPlayers);
-  
+
   const [copied, setCopied] = useState(false);
 
   const localPlayer = players.find((p) => p.isLocalPlayer)!;
