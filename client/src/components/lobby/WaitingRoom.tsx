@@ -10,10 +10,17 @@ import { socket } from "@/socket/socket";
 
 const MAX_PLAYERS = 6;
 
+// interface WaitingRoomProps {
+//   onStartGame?: () => void;
+// }
+
 export function WaitingRoom() {
+  
+
   const players = useGameStore((state) => state.players);
   const roomCode = useGameStore((state) => state.roomCode);
-
+  // const setPlayers = useGameStore((state) => state.setPlayers);
+  
   const [copied, setCopied] = useState(false);
 
   const localPlayer = players.find((p) => p.isLocalPlayer)!;
